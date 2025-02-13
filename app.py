@@ -19,7 +19,8 @@ def index():
                     'no_warnings': True,
                     'noprogress': True,
                     'cachedir': False,
-                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s')  # Use a template for the output file
+                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),  # Use a template for the output file
+                    'useragent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'  # Add a User-Agent
                 }
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info_dict = ydl.extract_info(url, download=False)
