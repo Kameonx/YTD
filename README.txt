@@ -15,7 +15,7 @@ YouTube Downloader (YTD) Application README
 
 --- 
 
-This is my fourth ever Application! Feedback is always welcome!
+This is my fourth Application! Feedback is always welcome!
 
 Website: https://www.kameon.net
 Email: Kameon@live.com
