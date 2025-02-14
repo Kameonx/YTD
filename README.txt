@@ -4,7 +4,7 @@ YouTube Downloader (YTD) Application README
 
 🎤 Using the YTD Application 
 
-🐍 Visit the web app hosted here: 
+🐍 Visit the web app hosted here: (app gets blocked by YouTube sign-in - looking for a fix).
 
 😿 If the site is down you may also follow the steps below:
 
