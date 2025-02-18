@@ -13,6 +13,8 @@ YouTube Downloader (YTD) Application README
 3. Ctrl + Left Click on the 'http://' address that appears in the cmd window.
 4. A new window with the app should open up.
 
+(I'm learning that on different computers, you must install Python, then run 'pip install -r requirements.txt' in a code editor like VSCode for the app.py to work properly).
+
 --- 
 
 This is my fourth Application! Feedback is always welcome!
