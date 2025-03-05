@@ -33,7 +33,7 @@
             color: #ffffff;
             box-sizing: border-box; /* Ensures padding doesn't increase width */
         }
-        input[type="submit"] {
+        input[type="submit"], button {
             width: 100%;
             padding: 10px;
             border: none;
@@ -42,8 +42,9 @@
             color: #ffffff;
             font-size: 16px;
             cursor: pointer;
+            margin-top: 10px;
         }
-        input[type="submit"]:hover {
+        input[type="submit"]:hover, button:hover {
             background-color: #3700b3;
         }
         h1 {
@@ -61,7 +62,8 @@
         <form method="post">
             <label for="url">Enter YouTube video URL:</label>
             <input type="text" id="url" name="url" required>
-            <input type="submit" value="Download Video">
+            <button type="submit" name="format" value="mp4">Download MP4</button>
+            <button type="submit" name="format" value="mp3">Download MP3</button>
         </form>
     </div>
 </body>
