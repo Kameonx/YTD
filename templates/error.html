@@ -27,14 +27,29 @@
             margin-bottom: 20px;
         }
         p {
-            color: #ff0000;
+            color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+        a {
+            color: #6200ea;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 15px;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Error occurred while downloading video.</h1>
+        <h1>Download Error</h1>
         <p>{{ error }}</p>
+        <a href="/">← Back to Homepage</a>
     </div>
 </body>
 </html>
