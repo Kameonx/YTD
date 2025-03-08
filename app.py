@@ -1,69 +1,92 @@
-from flask import Flask, render_template, request, send_file
-import yt_dlp
+from flask import Flask, render_template, request, send_file, redirect, url_for
+from pytubefix import YouTube
+from pytubefix.cli import on_progress
+from pytubefix.exceptions import RegexMatchError, VideoUnavailable
 import tempfile
 import os
 import io
+import re
+import urllib.request
+from functools import wraps
 
 app = Flask(__name__)
+
+def sanitize_filename(filename):
+    # Remove invalid characters and trim length
+    filename = re.sub(r'[<>:"/\\|?*]', '', filename)
+    return filename[:200]  # Limit length to avoid path issues
+
+def set_user_agent(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        kwargs['headers'] = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+        return func(*args, **kwargs)
+    return wrapper
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         url = request.form['url']
         format = request.form['format']
+        
+        # Validate URL
+        if not url.startswith(('http://', 'https://')):
+            return render_template('error.html', error="Please enter a valid URL")
+        
         try:
-            # Create a temporary directory to store the video file
+            # Create a temporary directory
             with tempfile.TemporaryDirectory() as temp_dir:
-                ydl_opts = {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'noprogress': True,
-                    'cachedir': False,
-                    'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),  # Use a template for the output file
-                    'useragent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'  # Add a User-Agent
-                }
-                
-                if format == 'mp4':
-                    ydl_opts['format'] = 'best[ext=mp4]'  # Select the best mp4 format
-                elif format == 'mp3':
-                    ydl_opts['format'] = 'bestaudio/best'
-                    ydl_opts['postprocessors'] = [{
-                        'key': 'FFmpegExtractAudio',
-                        'preferredcodec': 'mp3',
-                        'preferredquality': '192',
-                    }]
-                
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    info_dict = ydl.extract_info(url, download=False)
-                    
-                    # Get title from info_dict
-                    title = info_dict.get('title', 'video')
-                    
-                    # Download the video to the temporary directory
-                    ydl.download([url])
-                    
-                    # Find the downloaded file in the temporary directory
-                    filename = ydl.prepare_filename(info_dict)
-                    if format == 'mp3':
-                        filename = os.path.splitext(filename)[0] + '.mp3'
-                    
-                    with open(filename, 'rb') as f:
-                        video_data = f.read()
-                    
-                    # Create a BytesIO buffer from the video data
-                    buffer = io.BytesIO(video_data)
-                    
-                    # Reset buffer position to the start
-                    buffer.seek(0)
+                try:
+                    yt = YouTube(url, on_progress_callback=on_progress)
+                    try:
+                        title = sanitize_filename(yt.title)
+                    except:
+                        title = "Video"  # Default title if retrieval fails
                     
                     if format == 'mp4':
-                        return send_file(buffer, as_attachment=True, download_name=f"{title}.mp4", mimetype='video/mp4')
+                        stream = yt.streams.filter(file_extension='mp4', progressive=True).order_by('resolution').desc().first()
+                        if stream is None:
+                            stream = yt.streams.filter(file_extension='mp4').order_by('resolution').desc().first()
+                        if stream is None:
+                            return render_template('error.html', error="No suitable MP4 stream found.")
+                        
+                        file_path = stream.download(output_path=temp_dir, filename=f"{title}.mp4")
+                        mime_type = 'video/mp4'
+                        
                     elif format == 'mp3':
-                        return send_file(buffer, as_attachment=True, download_name=f"{title}.mp3", mimetype='audio/mpeg')
+                        stream = yt.streams.filter(only_audio=True).order_by('abr').desc().first()
+                        if stream is None:
+                            return render_template('error.html', error="No suitable MP3 stream found.")
+                        
+                        file_path = stream.download(output_path=temp_dir, filename=f"{title}.mp3")
+                        mime_type = 'audio/mpeg'
+
+                    else:
+                        return render_template('error.html', error="Invalid format specified.")
+                    
+                    with open(file_path, 'rb') as f:
+                        file_data = f.read()
+                    
+                    buffer = io.BytesIO(file_data)
+                    buffer.seek(0)
+                    
+                    return send_file(
+                        buffer,
+                        as_attachment=True,
+                        download_name=os.path.basename(file_path),
+                        mimetype=mime_type
+                    )
+
+                except RegexMatchError:
+                    return render_template('error.html', error="Invalid YouTube URL.")
+                except VideoUnavailable:
+                    return render_template('error.html', error="This video is unavailable.")
+                except Exception as e:
+                    return render_template('error.html', error=f"Download failed: {str(e)}")
 
         except Exception as e:
-            return render_template('error.html', error=str(e))
-    
+            return render_template('error.html', error=f"An error occurred: {str(e)}")
+
     return render_template('index.html')
 
 if __name__ == '__main__':
